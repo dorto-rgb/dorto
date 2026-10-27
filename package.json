@@ -7,7 +7,10 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "check:content": "node scripts/smoke.mjs",
+    "check:behavior": "node scripts/behavior.mjs",
+    "check": "npm run lint && npm run build && npm run check:content && npm run check:behavior"
   },
   "dependencies": {
     "react": "^19.3.1",
