@@ -127,20 +127,19 @@ async function testPortfolio() {
   const all = cards().length
   check('Портфолио: 6 карточек в состоянии «Все»', all === 6, `карточек ${all}`)
 
-  const filters = Array.from(container.querySelectorAll<HTMLButtonElement>('button[aria-pressed]'))
-  check('Портфолио: фильтры отрендерены', filters.length >= 2, `кнопок ${filters.length}`)
+  const filters = Array.from(container.querySelectorAll<HTMLButtonElement>('button[role="tab"]'))
+  check('Портфолио: 4 фильтра категорий', filters.length === 4, `кнопок ${filters.length}`)
 
-  /* Нажимаем каждый не-«all» фильтр и сверяем количество карточек */
+  /* Нажимаем каждый фильтр и сверяем количество карточек */
   for (const filter of filters) {
     const label = text(filter)
     await click(filter)
     const shown = cards().length
-    const pressed = filter.getAttribute('aria-pressed') === 'true'
-    const highlighted = filter.className.includes('bg-') || filter.className.includes('text-white')
+    const selected = filter.getAttribute('aria-selected') === 'true'
     check(
-      `Портфолио: фильтр «${label}» → ${shown} проект(ов)`,
-      shown >= 1 && shown <= 6 && pressed && highlighted,
-      `показано ${shown}, aria-pressed=${pressed}`,
+      `Портфолио: фильтр «${label}» → ${shown} проект(ов), aria-selected=${selected}`,
+      shown >= 1 && shown <= 6 && selected,
+      `показано ${shown}`,
     )
   }
 
@@ -156,6 +155,13 @@ async function testPortfolio() {
   await click(openBtn)
   const dialog = document.querySelector('[role="dialog"]')
   check('Портфолио: «Посмотреть проект» открывает детали', Boolean(dialog))
+
+  const dialogText = text(dialog)
+  check(
+    'Портфолио: диалог помечен как концепт',
+    /демонстрационный концепт/i.test(dialogText),
+    dialogText.slice(0, 60),
+  )
 
   const closeBtn = dialog?.querySelector<HTMLButtonElement>('button[aria-label*="Закрыть"]')
   if (closeBtn) {
