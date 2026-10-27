@@ -28,7 +28,9 @@ function validate(values: FormState, contacts: Contacts): Errors {
 
   const contact = values.contact.trim()
   const looksLikePhone = /^\+?[\d\s()-]{10,}$/.test(contact)
-  const looksLikeHandle = /^@?[a-zA-Z][\w.]{3,}$/.test(contact) && contact.includes('@') === false
+  // @username, username или t.me/username: «@» допустим только в начале,
+  // поэтому адреса вида mail@example.com сюда не попадают
+  const looksLikeHandle = /^(?:@|https?:\/\/t\.me\/)?[a-zA-Z][\w.]{3,}$/.test(contact)
   if (!contact) errors.contact = 'Оставьте Telegram, e-mail или телефон'
   else if (!isEmail(contact) && !looksLikeHandle && !looksLikePhone)
     errors.contact = 'Проверьте формат: @username, e-mail или телефон'
