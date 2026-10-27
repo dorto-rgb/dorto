@@ -9,10 +9,8 @@ import {
   SpinnerIcon,
   TelegramIcon,
   ArrowUpRight,
-  CloseIcon,
 } from './Icons'
 import { Reveal, Section } from './ui'
-import { useSpotlight } from '../hooks/useUi'
 
 export type Prefill = { text: string; nonce: number }
 
