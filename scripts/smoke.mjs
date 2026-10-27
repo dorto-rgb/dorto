@@ -11,7 +11,7 @@ const server = await createServer({
 })
 
 try {
-  await server.ssrLoadModule('/src/smoke.tsx')
+  await server.ssrLoadModule('/scripts/smoke.tsx')
 } finally {
   await server.close()
 }
