@@ -62,21 +62,36 @@ async function testFaq() {
   const triggers = Array.from(container.querySelectorAll<HTMLButtonElement>('button[aria-expanded]'))
   check('FAQ: 8 вопросов в аккордеоне', triggers.length === 8, `найдено ${triggers.length}`)
 
+  const panelState = (btn: HTMLButtonElement) => {
+    const id = btn.getAttribute('aria-controls')
+    return id ? container.querySelector(`#${id}`)?.getAttribute('data-open') : null
+  }
+
+  /* Первый вопрос раскрыт по умолчанию, остальные закрыты */
   const first = triggers[0]
-  check('FAQ: панели закрыты по умолчанию', first.getAttribute('aria-expanded') === 'false')
+  check(
+    'FAQ: первый вопрос раскрыт по умолчанию',
+    first.getAttribute('aria-expanded') === 'true' && panelState(first) === 'true',
+    `aria-expanded=${first.getAttribute('aria-expanded')}, data-open=${panelState(first)}`,
+  )
+  check(
+    'FAQ: остальные вопросы закрыты по умолчанию',
+    triggers.slice(1).every((t) => t.getAttribute('aria-expanded') === 'false'),
+  )
 
-  const panelId = first.getAttribute('aria-controls')
-  const panel = panelId ? container.querySelector(`#${panelId}`) : null
-  const hiddenBefore = panel?.hasAttribute('hidden') ?? false
-
+  /* Клик закрывает открытый вопрос и синхронно обновляет панель */
   await click(first)
+  check(
+    'FAQ: клик закрывает ответ',
+    first.getAttribute('aria-expanded') === 'false' && panelState(first) === 'false',
+  )
 
-  const expandedAfter = first.getAttribute('aria-expanded') === 'true'
-  const hiddenAfter = panel?.hasAttribute('hidden') ?? false
-  check('FAQ: клик раскрывает ответ', expandedAfter && hiddenBefore && !hiddenAfter)
-
+  /* Клик снова раскрывает */
   await click(first)
-  check('FAQ: повторный клик закрывает ответ', first.getAttribute('aria-expanded') === 'false')
+  check(
+    'FAQ: повторный клик раскрывает ответ',
+    first.getAttribute('aria-expanded') === 'true' && panelState(first) === 'true',
+  )
 
   /* Одновременно открыт только один вопрос */
   await click(triggers[1])
