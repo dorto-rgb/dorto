@@ -86,6 +86,35 @@ export function useSpotlight<T extends HTMLElement = HTMLDivElement>() {
   return { ref, onPointerMove }
 }
 
+/** Scales a fixed-size design canvas to fit its container width. */
+export function useFitScale(designWidth: number) {
+  const ref = useRef<HTMLDivElement | null>(null)
+  const [scale, setScale] = useState(0.5)
+
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+
+    const update = () => {
+      const width = el.clientWidth
+      if (width > 0) setScale(width / designWidth)
+    }
+
+    update()
+
+    if (typeof ResizeObserver === 'undefined') {
+      window.addEventListener('resize', update)
+      return () => window.removeEventListener('resize', update)
+    }
+
+    const observer = new ResizeObserver(update)
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [designWidth])
+
+  return { ref, scale }
+}
+
 /** Locks body scroll (mobile menu). */
 export function useBodyLock(locked: boolean) {
   useEffect(() => {

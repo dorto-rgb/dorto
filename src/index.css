@@ -284,17 +284,14 @@
   transform: none;
 }
 
-/* mockup scaling: fixed design canvas that scales into its frame */
+/* mockup scaling: fixed design canvas scaled into its frame */
 .mockup-frame {
-  container-type: inline-size;
   overflow: hidden;
 }
 
 .mockup-canvas {
-  width: 1200px;
-  height: 750px;
   transform-origin: top left;
-  transform: scale(calc(100cqw / 1200));
+  flex: none;
 }
 
 /* glass chip */
