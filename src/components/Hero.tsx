@@ -1,6 +1,6 @@
 import { siteConfig } from '../site'
 import { scrollToSection } from '../hooks/useUi'
-import { ArrowIcon, ArrowUpRight, SparkArrow } from './HeroIcons'
+import { ArrowIcon, ArrowUpRight } from './HeroIcons'
 import { HeroScene } from './HeroScene'
 
 export function Hero() {
