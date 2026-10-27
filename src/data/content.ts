@@ -167,6 +167,8 @@ export type Project = {
   summary: string
   features: string[]
   accent: string
+  /** Демонстрационный адрес, отображаемый в адресной строке превью. */
+  domain: string
 }
 
 export const projectFilters = [
