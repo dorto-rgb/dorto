@@ -91,9 +91,10 @@ const missingMarkup = requiredMarkup.filter((needle) => !html.includes(needle))
 
 const count = (name: string) => (html.match(new RegExp(`<${name}[\\s>]`, 'g')) ?? []).length
 
-/* Никакого Lorem Ipsum и вымышленных соцдоказательств. */
-const banned = ['Lorem ipsum', 'lorem ipsum', '★★★★★', 'Отзывы клиентов', '5.0']
-const foundBanned = banned.filter((needle) => text.includes(needle) || html.includes(needle))
+/* Никакого Lorem Ipsum и вымышленных соцдоказательств (проверяем только текст, не SVG-пути). */
+const banned = ['Lorem ipsum', 'lorem ipsum', '★★★★★', 'Отзывы клиентов', '5.0/5', 'рейтинг']
+const foundBanned = banned.filter((needle) => text.toLowerCase().includes(needle.toLowerCase()))
+const fabricatedSocialProof = /\b\d+\s*(отзыв|клиент|проект[аов]?\s+сдан)/i.test(text)
 
 /* Все ссылки-якоря должны указывать на существующие секции. */
 const anchors = [...html.matchAll(/href="#([\w-]+)"/g)].map((m) => m[1])
