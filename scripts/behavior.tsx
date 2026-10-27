@@ -180,33 +180,38 @@ async function testPortfolio() {
 /* ---------------- 3. Contact form ---------------- */
 
 async function testContact() {
-  const updates: unknown[] = []
+  const updates: { telegram?: string; email?: string }[] = []
   const container = await mount(
     <Contact
       contacts={defaultContacts}
-      onUpdateContacts={(next) => updates.push(next)}
+      onUpdateContacts={(next) => updates.push(next as { telegram?: string; email?: string })}
       onResetContacts={() => {}}
       prefill={null}
     />,
   )
 
-  const form = container.querySelector('form')
-  check('Форма: <form> присутствует', Boolean(form))
+  const nameInput = container.querySelector<HTMLInputElement>('#contact-name')
+  const contactInput = container.querySelector<HTMLInputElement>('#contact-value')
+  const projectInput = container.querySelector<HTMLTextAreaElement>('#contact-project')
+  const form = nameInput?.closest('form') ?? null
 
-  const inputs = Array.from(container.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>('input, textarea'))
-  check('Форма: поля имени, контакта и задачи', inputs.length >= 3, `полей ${inputs.length}`)
+  check(
+    'Форма: поля имени, контакта и задачи',
+    Boolean(nameInput && contactInput && projectInput && form),
+  )
+
+  const alerts = () => container.querySelectorAll('[role="alert"]').length
 
   /* Отправка пустой формы → ошибки, отправки нет */
   await act(async () => {
     form!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }))
   })
-  const alerts = container.querySelectorAll('[role="alert"]')
-  check('Форма: пустая отправка даёт ошибки валидации', alerts.length >= 1, `ошибок ${alerts.length}`)
+  check('Форма: пустая отправка даёт ошибки валидации', alerts() === 3, `ошибок ${alerts()}`)
   check('Форма: успех не показан при ошибках', !/заявка сформирована/i.test(text(container)))
 
-  /* Невалидный контакт */
   const setValue = async (el: HTMLInputElement | HTMLTextAreaElement, value: string) => {
-    const proto = el instanceof HTMLTextAreaElement ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype
+    const proto =
+      el instanceof HTMLTextAreaElement ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype
     const setter = Object.getOwnPropertyDescriptor(proto, 'value')!.set!
     await act(async () => {
       setter.call(el, value)
@@ -214,64 +219,79 @@ async function testContact() {
     })
   }
 
-  const [nameInput, contactInput, projectInput] = inputs
-  await setValue(nameInput, 'Иван')
-  await setValue(contactInput, 'не-контакт')
-  await setValue(projectInput, 'Нужен лендинг для студии')
-  await act(async () => {
-    form!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }))
-  })
+  const submit = async () => {
+    await act(async () => {
+      form!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }))
+    })
+  }
+
+  /* Невалидный контакт отклоняется */
+  await setValue(nameInput!, 'Иван')
+  await setValue(contactInput!, 'не-контакт')
+  await setValue(projectInput!, 'Нужен лендинг для студии дизайна')
+  await submit()
   check(
     'Форма: неверный контакт отклоняется',
-    /формат|проверьте/i.test(text(container)) && !/заявка сформирована/i.test(text(container)),
+    /проверьте формат/i.test(text(container)) && !/заявка сформирована/i.test(text(container)),
   )
 
+  /* Telegram-хэндл в формате из подсказки принимается (регрессия) */
+  await setValue(contactInput!, '@ivan_dev')
+  await submit()
+  const handleAccepted = alerts() === 0
+  check('Форма: @username принимается валидацией', handleAccepted, `ошибок ${alerts()}`)
+
   /* Валидные данные → загрузка → успех */
-  await setValue(contactInput, '@ivan_dev')
-  await act(async () => {
-    form!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }))
-  })
-  const loadingShown = /отправ/i.test(text(container)) && !/заявка сформирована/i.test(text(container))
-  check('Форма: показано состояние загрузки', loadingShown, text(container).slice(0, 80))
+  const loadingShown = /отправляем/i.test(text(container)) && !/заявка сформирована/i.test(text(container))
+  check('Форма: показано состояние загрузки', loadingShown, text(container).slice(0, 60))
 
   await act(async () => {
-    await sleep(1400)
+    await sleep(1500)
   })
   const success = /заявка сформирована/i.test(text(container))
   check('Форма: показано состояние успеха', success)
+  check('Форма: в успехе подставлено имя', /иван/i.test(text(container)))
 
   const mailLink = Array.from(container.querySelectorAll<HTMLAnchorElement>('a'))
     .map((a) => a.getAttribute('href') ?? '')
     .find((href) => href.startsWith('mailto:') && href.includes('subject='))
-  check('Форма: успех даёт mailto со сформированной заявкой', Boolean(mailLink), mailLink ?? 'нет')
+  check('Форма: успех даёт mailto со сформированной заявкой', Boolean(mailLink), mailLink ? 'есть' : 'нет')
 
-  /* Редактирование контактов вызывает onUpdateContacts */
+  const telegramLink = Array.from(container.querySelectorAll<HTMLAnchorElement>('a'))
+    .map((a) => a.getAttribute('href') ?? '')
+    .find((href) => href.startsWith('https://t.me/'))
+  check('Контакты: ссылка Telegram корректна', Boolean(telegramLink), telegramLink ?? 'нет')
+
+  /* Редактор контактов: открытие → сохранение валидного e-mail */
   const editBtn = Array.from(container.querySelectorAll('button')).find((b) =>
-    /изменить/i.test(text(b)),
+    /изменить контакты/i.test(text(b)),
   )
-  await ActClick(editBtn)
-  const emailField = Array.from(container.querySelectorAll<HTMLInputElement>('input')).find(
-    (i) => i.type === 'email' || /mail/i.test(i.name || i.id || i.getAttribute('placeholder') || ''),
-  )
-  if (emailField) {
-    await setValue(emailField, 'new@studio.ru')
-    const saveBtn = Array.from(container.querySelectorAll('button')).find((b) => /сохранить/i.test(text(b)))
-    await ActClick(saveBtn)
-    check('Контакты: изменение e-mail сохраняется', updates.length >= 1, JSON.stringify(updates.at(-1)))
-  } else {
-    check('Контакты: поле e-mail доступно для редактирования', false)
-  }
+  await click(editBtn)
+  const editor = container.querySelector('#contacts-editor')
+  check('Контакты: редактор открывается', editor?.getAttribute('data-open') === 'true')
 
-  const telegramLink = Array.from(container.querySelectorAll<HTMLAnchorElement>('a')).find((a) =>
-    (a.getAttribute('href') ?? '').includes('t.me/'),
+  const editorEmail = container.querySelector<HTMLInputElement>('#editor-email')
+  const editorForm = editorEmail?.closest('form') ?? null
+  check('Контакты: поле e-mail доступно в редакторе', Boolean(editorEmail && editorForm))
+
+  await setValue(editorEmail!, 'not-an-email')
+  await act(async () => {
+    editorForm!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }))
+  })
+  check('Контакты: неверный e-mail не сохраняется', updates.length === 0 && /проверьте формат/i.test(text(container)))
+
+  await setValue(editorEmail!, 'new@studio.ru')
+  await act(async () => {
+    editorForm!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }))
+  })
+  check(
+    'Контакты: изменение e-mail сохраняется',
+    updates.length >= 1 && updates.at(-1)?.email === 'new@studio.ru',
+    JSON.stringify(updates.at(-1) ?? null),
   )
-  check('Контакты: ссылка Telegram корректна', Boolean(telegramLink), telegramLink?.getAttribute('href') ?? 'нет')
+  check('Контакты: показано подтверждение сохранения', /сохранено/i.test(text(editor)))
 
   await unmount()
-}
-
-async function ActClick(el: Element | null | undefined) {
-  await click(el)
 }
 
 /* ---------------- runner ---------------- */
