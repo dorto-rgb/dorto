@@ -41,8 +41,11 @@ export function Process({ onDiscuss }: { onDiscuss: (subject: string) => void })
                   <span className="relative grid h-11 w-11 shrink-0 place-items-center rounded-full border border-white/12 bg-void/80 font-display text-[0.9rem] font-semibold text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.12)] transition-colors duration-500 group-hover:border-electric-soft/50">
                     <span className="absolute inset-0 rounded-full bg-[radial-gradient(circle_at_50%_20%,rgba(122,155,255,0.28),transparent_70%)] opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
                     <span className="relative">{step.number}</span>
-                  </span criança className="hidden" />
-                  <span className="h-px flex-1 bg-gradient-to-r from-white/14 to-transparent" aria-hidden="true" />
+                  </span>
+                  <span
+                    className="h-px flex-1 bg-gradient-to-r from-white/14 to-transparent"
+                    aria-hidden="true"
+                  />
                 </div>
 
                 <h3 className="mt-6 font-display text-[1.12rem] leading-tight tracking-[-0.02em] text-white">
